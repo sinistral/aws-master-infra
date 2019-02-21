@@ -1,0 +1,98 @@
+
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+
+  # EVERYONE! https://www.youtube.com/watch?v=74BzSTQCl_c
+  UsersGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: users
+      Policies:
+        - PolicyDocument:
+            Statement:
+              Effect: Deny
+              NotAction:
+                - iam:*
+                - sts:*
+              Resource: "*"
+            Version: 2012-10-17
+          PolicyName: NoNonIamResources
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - iam:ListAccountAliases
+                  - iam:ListUsers
+                  - iam:GetAccountSummary
+                Effect: Allow
+                Resource: "*"
+                Sid: AllowAllUsersToListAccounts
+              - Action:
+                  - iam:ChangePassword
+                  - iam:CreateAccessKey
+                  - iam:CreateLoginProfile
+                  - iam:DeleteAccessKey
+                  - iam:DeleteLoginProfile
+                  - iam:GetAccountPasswordPolicy
+                  - iam:GetLoginProfile
+                  - iam:ListAccessKeys
+                  - iam:UpdateAccessKey
+                  - iam:UpdateLoginProfile
+                  - iam:ListSigningCertificates
+                  - iam:DeleteSigningCertificate
+                  - iam:UpdateSigningCertificate
+                  - iam:UploadSigningCertificate
+                  - iam:ListSSHPublicKeys
+                  - iam:GetSSHPublicKey
+                  - iam:DeleteSSHPublicKey
+                  - iam:UpdateSSHPublicKey
+                  - iam:UploadSSHPublicKey
+                Effect: Allow
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:user/${!aws:username}
+                Sid: AllowIndividualUserToSeeAndManageTheirOwnAccountInformation
+              - Action:
+                  - iam:ListVirtualMFADevices
+                  - iam:ListMFADevices
+                Effect: Allow
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:mfa/*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:user/${!aws:username}
+                Sid: AllowIndividualUserToListTheirOwnMFA
+              - Action:
+                  - iam:CreateVirtualMFADevice
+                  - iam:DeactivateMFADevice
+                  - iam:DeleteVirtualMFADevice
+                  - iam:RequestSmsMfaRegistration
+                  - iam:FinalizeSmsMfaRegistration
+                  - iam:EnableMFADevice
+                  - iam:ResyncMFADevice
+                Effect: Allow
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:mfa/${!aws:username}
+                  - !Sub arn:aws:iam::${AWS::AccountId}:user/${!aws:username}
+                Sid: AllowIndividualUserToManageTheirOwnMFA
+              - Condition:
+                  BoolIfExists:
+                    aws:MultiFactorAuthPresent: false
+                Effect: Deny
+                NotAction: iam:*
+                Resource: "*"
+                Sid: BlockAnyAccessOtherThanAboveUnlessSignedInWithMFA
+            Version: 2012-10-17
+          PolicyName: EnforceMfa
+
+  WheelGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: wheel
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Policies:
+        - PolicyName: AssumeAnyRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: arn:aws:iam::*:role/*
