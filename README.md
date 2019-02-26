@@ -14,11 +14,11 @@ available.
 
 ```
 aws --region ${AWS_REGION} cloudformation create-change-set \
-    --stack-name iam \
-    --change-set-name marc-$(date -ju +"%Y%m%dT%H%M%S") \
+    --stack-name master \
+    --change-set-name ${USER}-$(date -ju +"%Y%m%dT%H%M%S") \
     --change-set-type UPDATE \
     --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-    --template-body file://template/iam.yaml
+    --template-body file://template/master.yaml
 ```
 
 ## License
